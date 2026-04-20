@@ -39,6 +39,8 @@ export default function SplashScreenView({ onFinish }: Props) {
       Animated.delay(300),
       Animated.timing(screenOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
     ]).start(() => onFinish());
+  // All animated refs are stable. onFinish is intentionally excluded to run once.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

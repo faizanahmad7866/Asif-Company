@@ -6,7 +6,7 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LocateFixed, ImagePlus, Camera, CheckCircle } from 'lucide-react-native';
+import { LocateFixed, ImagePlus, Camera, CheckCircle, RotateCcw } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { addShop, getShops } from '../../services/database';
@@ -139,7 +139,19 @@ export default function AddScreen() {
   };
 
   const canSave = !!shopName && !!ownerName && !!coords && (contactNumber || '').length === 10 && !isLocating;
-  const cannotSave = !canSave;
+
+  const handleReset = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setShopName('');
+    setOwnerName('');
+    setContactNumber('');
+    setPhoneError(null);
+    setLocationError(null);
+    setAddress(text.autoFetchLoc);
+    setCoords(null);
+    setPhotoUri('');
+    fetchLocation(false);
+  };
 
   const handleSave = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -189,9 +201,19 @@ export default function AddScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerLabel}>NEW SHOP</Text>
-          <Text style={styles.headerTitle}>{text.addShopHeader}</Text>
-          <Text style={styles.subtitle}>{text.addShopSub}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerLabel}>NEW SHOP</Text>
+            <Text style={styles.headerTitle}>{text.addShopHeader}</Text>
+            <Text style={styles.subtitle}>{text.addShopSub}</Text>
+          </View>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleReset}
+            style={styles.resetBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <RotateCcw size={18} color={Theme.colors.primary} />
+          </TouchableOpacity>
         </View>
 
         {/* GPS Card */}
@@ -311,6 +333,17 @@ const getStyles = (Theme: any) => StyleSheet.create({
   header: {
     paddingTop: Theme.spacing.m,
     paddingBottom: Theme.spacing.m,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  resetBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
   },
   headerLabel: {
     fontSize: 10,

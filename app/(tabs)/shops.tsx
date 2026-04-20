@@ -1,7 +1,7 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { MapPin, MessageCircle, Pencil, Phone, Search, Share2, Trash2, X, Navigation, Clock } from 'lucide-react-native';
+import { MapPin, MessageCircle, Pencil, Phone, RefreshCw, Search, Share2, Trash2, X, Navigation, Clock } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
-import { Image, KeyboardAvoidingView, Linking, Modal, Platform, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Linking, Modal, Platform, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Shop, getShops, deleteShop } from '../../services/database';
@@ -16,6 +16,8 @@ export default function ShopsScreen() {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [shopToDelete, setShopToDelete] = useState<string | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const { Theme, text } = useAppThemeAndText();
   const styles = getStyles(Theme);
@@ -23,6 +25,14 @@ export default function ShopsScreen() {
   const loadShops = async () => {
     const data = await getShops();
     setShops(data);
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    setRefreshKey(k => k + 1); // busts photo cache
+    await loadShops();
+    setIsRefreshing(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   useFocusEffect(
@@ -133,8 +143,18 @@ export default function ShopsScreen() {
           <Text style={styles.headerLabel}>{text.shopDirectoryLabel}</Text>
           <Text style={styles.headerTitle}>{text.shopsHeader}</Text>
         </View>
-        <View style={styles.countBadge}>
-          <Text style={styles.countBadgeText}>{shops.length}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleRefresh}
+            style={styles.refreshBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <RefreshCw size={18} color={Theme.colors.primary} />
+          </TouchableOpacity>
+          <View style={styles.countBadge}>
+            <Text style={styles.countBadgeText}>{shops.length}</Text>
+          </View>
         </View>
       </View>
 
@@ -173,6 +193,14 @@ export default function ShopsScreen() {
         keyExtractor={(item: Shop) => item.id.toString()}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[Theme.colors.primary]}
+            tintColor={Theme.colors.primary}
+          />
+        }
         renderItem={({ item: shop }: { item: Shop }) => {
           const hasHistory = !!shop.lastVisitedTimestamp;
           const isPending = !hasHistory;
@@ -186,7 +214,12 @@ export default function ShopsScreen() {
             <View style={styles.card}>
               {isPending && <View style={styles.pendingIndicator} />}
               {shop.photoUri ? (
-                <Image source={{ uri: shop.photoUri }} style={styles.shopPhoto} resizeMode="cover" />
+                <Image
+                  key={`photo-${shop.id}-${refreshKey}`}
+                  source={{ uri: `${shop.photoUri}?t=${refreshKey}` }}
+                  style={styles.shopPhoto}
+                  resizeMode="cover"
+                />
               ) : null}
 
               {/* ── Shop Identity ── */}
@@ -199,9 +232,14 @@ export default function ShopsScreen() {
                     <Text style={styles.addressText} numberOfLines={2}>{shop.address}</Text>
                   </View>
                 </View>
-                <TouchableOpacity activeOpacity={0.7} style={styles.editIconBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(`/shop/edit/${shop.id}` as any); }}>
-                  <Pencil size={20} color={Theme.colors.textMuted} />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity activeOpacity={0.7} style={styles.editIconBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(`/shop/edit/${shop.id}` as any); }}>
+                    <Pencil size={18} color={Theme.colors.textMuted} />
+                  </TouchableOpacity>
+                  <TouchableOpacity activeOpacity={0.7} style={styles.deleteIconBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); handleDeleteShop(shop.id); }}>
+                    <Trash2 size={16} color={Theme.colors.errorText} />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* ── Elegant Action Grid ── */}
@@ -330,6 +368,14 @@ const getStyles = (Theme: any) => StyleSheet.create({
     color: Theme.colors.primary,
     letterSpacing: -0.3,
   },
+  refreshBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   countBadge: {
     backgroundColor: Theme.colors.primaryLight,
     paddingHorizontal: 14,
@@ -421,7 +467,10 @@ const getStyles = (Theme: any) => StyleSheet.create({
   },
   shopPhoto: {
     width: '100%',
-    height: 120,
+    height: 160,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    backgroundColor: '#1E1E1E', // Dark background for the letterbox
   },
   cardTop: {
     flexDirection: 'row',
@@ -430,9 +479,20 @@ const getStyles = (Theme: any) => StyleSheet.create({
     paddingBottom: Theme.spacing.s,
   },
   editIconBtn: {
-    padding: 8,
-    marginRight: -8,
-    marginTop: -8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Theme.colors.inputBackground,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Theme.colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   shopIdText: {
     fontSize: 11,
