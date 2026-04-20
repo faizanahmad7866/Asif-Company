@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { MapPin, MessageCircle, Pencil, Phone, Search, Share2, Trash2, X, Navigation, Clock, PlusCircle } from 'lucide-react-native';
+import { MapPin, MessageCircle, Pencil, Phone, Search, Share2, Trash2, X, Navigation, Clock } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import { Image, KeyboardAvoidingView, Linking, Modal, Platform, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -54,12 +54,11 @@ export default function ShopsScreen() {
   };
 
   const handleWhatsAppDirect = (shop: Shop) => {
-    const number = shop.contactNumber?.replace(/\D/g, '');
+    const number = shop.contactNumber?.replaceAll(/\D/g, '');
     if (!number) {
       alert('This shop has no phone number saved.');
       return;
     }
-    // Use international format — prepend 91 (India) if number is 10 digits
     const intlNumber = number.length === 10 ? `91${number}` : number;
     Linking.openURL(`https://wa.me/${intlNumber}`).catch(() => {
       alert('Make sure WhatsApp is installed on your device');
@@ -67,16 +66,13 @@ export default function ShopsScreen() {
   };
 
   const handleCall = (shop: Shop) => {
-    let phoneNumber = shop.contactNumber;
-    if (Platform.OS !== 'android') {
-      phoneNumber = `telprompt:${shop.contactNumber}`;
-    } else {
-      phoneNumber = `tel:${shop.contactNumber}`;
-    }
+    const phoneNumber = Platform.OS !== 'android'
+      ? `telprompt:${shop.contactNumber}`
+      : `tel:${shop.contactNumber}`;
     Linking.openURL(phoneNumber);
   };
 
-  const confirmDeleteShop = (id: string) => {
+  const handleDeleteShop = (id: string) => {
     setShopToDelete(id);
     setDeleteConfirmText('');
     setDeleteModalVisible(true);

@@ -17,6 +17,18 @@ type SetupStep = 'passcode' | 'confirm' | 'security';
 // Unlock steps
 type UnlockStep = 'passcode' | 'recovery';
 
+const STEP_ICONS = [Lock, ShieldCheck, CalendarDays];
+const SETUP_STEPS: SetupStep[] = ['passcode', 'confirm', 'security'];
+
+function getStepIconIndex(step: SetupStep): number {
+  return SETUP_STEPS.indexOf(step);
+}
+
+function isStepDotActive(dotIndex: number, currentStep: SetupStep): boolean {
+  const currentIndex = SETUP_STEPS.indexOf(currentStep);
+  return dotIndex <= currentIndex;
+}
+
 export default function LockScreen() {
   const router = useRouter();
   const { setup } = useLocalSearchParams<{ setup?: string }>();
@@ -52,36 +64,31 @@ export default function LockScreen() {
   };
 
   // ── SETUP FLOW ──────────────────────────────────────────
-  const handleSetupNext = async () => {
-    if (setupStep === 'passcode') {
-      if (code.length !== 4) {
-        Alert.alert('Invalid', text.invalidCode);
-        return;
-      }
-      setSetupStep('confirm');
-    } else if (setupStep === 'confirm') {
-      if (confirm.length !== 4) {
-        Alert.alert('Invalid', text.invalidCode);
-        return;
-      }
-      if (code !== confirm) {
-        Alert.alert('Mismatch', 'Passcodes do not match. Please try again.');
-        setConfirm('');
-        return;
-      }
-      setSetupStep('security');
-    } else if (setupStep === 'security') {
-      if (birthDate.trim().length < 6) {
-        Alert.alert('Required', 'Please enter your birth date (e.g. 01/01/1990).');
-        return;
-      }
-      const passcodeHash = await hashPasscode(code);
-      const securityAnswerHash = await hashSecurityAnswer(birthDate);
-      await setAppLock({ enabled: true, passcodeHash, securityAnswerHash });
-      await setUnlockedSession(true);
-      Alert.alert('✅ App Lock Set', 'Your passcode and security answer have been saved.');
-      router.replace('/(tabs)');
-    }
+  const handlePasscodeStep = () => {
+    if (code.length !== 4) { Alert.alert('Invalid', text.invalidCode); return; }
+    setSetupStep('confirm');
+  };
+
+  const handleConfirmStep = () => {
+    if (confirm.length !== 4) { Alert.alert('Invalid', text.invalidCode); return; }
+    if (code !== confirm) { Alert.alert('Mismatch', 'Passcodes do not match. Please try again.'); setConfirm(''); return; }
+    setSetupStep('security');
+  };
+
+  const handleSecurityStep = async () => {
+    if (birthDate.trim().length < 6) { Alert.alert('Required', 'Please enter your birth date (e.g. 01/01/1990).'); return; }
+    const passcodeHash = await hashPasscode(code);
+    const securityAnswerHash = await hashSecurityAnswer(birthDate);
+    await setAppLock({ enabled: true, passcodeHash, securityAnswerHash });
+    await setUnlockedSession(true);
+    Alert.alert('✅ App Lock Set', 'Your passcode and security answer have been saved.');
+    router.replace('/(tabs)');
+  };
+
+  const handleSetupNext = () => {
+    if (setupStep === 'passcode') { handlePasscodeStep(); }
+    else if (setupStep === 'confirm') { handleConfirmStep(); }
+    else { handleSecurityStep(); }
   };
 
   // ── UNLOCK FLOW ─────────────────────────────────────────
@@ -126,8 +133,7 @@ export default function LockScreen() {
 
   // ── RENDER SETUP ─────────────────────────────────────────
   if (isSetup) {
-    const stepIcons = [Lock, ShieldCheck, CalendarDays];
-    const StepIcon = stepIcons[setupStep === 'passcode' ? 0 : setupStep === 'confirm' ? 1 : 2];
+    const StepIcon = STEP_ICONS[getStepIconIndex(setupStep)];
 
     return (
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -135,8 +141,8 @@ export default function LockScreen() {
 
           {/* Step Indicator */}
           <View style={styles.stepRow}>
-            {['passcode', 'confirm', 'security'].map((s, i) => (
-              <View key={s} style={[styles.stepDot, (setupStep === s || (setupStep === 'confirm' && i === 0) || (setupStep === 'security' && i <= 1)) && styles.stepDotActive]} />
+            {SETUP_STEPS.map((s, i) => (
+              <View key={s} style={[styles.stepDot, isStepDotActive(i, setupStep) && styles.stepDotActive]} />
             ))}
           </View>
 

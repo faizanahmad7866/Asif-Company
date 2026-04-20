@@ -64,7 +64,7 @@ export default function HomeScreen() {
   };
 
   const handleWhatsAppDirect = (shop: Shop) => {
-    const number = shop.contactNumber?.replace(/\D/g, '');
+    const number = shop.contactNumber?.replaceAll(/\D/g, '');
     if (!number) {
       alert('This shop has no phone number saved.');
       return;

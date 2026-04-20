@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type Language = 'en' | 'hi';
@@ -21,6 +21,7 @@ const AppPreferencesContext = createContext<AppPreferences>({
 export const AppPreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>('en');
   const [theme, setThemeState] = useState<ThemeType>('light');
+
 
   useEffect(() => {
     (async () => {
@@ -45,8 +46,13 @@ export const AppPreferencesProvider: React.FC<{ children: React.ReactNode }> = (
     await AsyncStorage.setItem('@app_theme', th);
   };
 
+  const contextValue = useMemo(
+    () => ({ language, theme, setLanguage, setTheme }),
+    [language, theme, setLanguage, setTheme]
+  );
+
   return (
-    <AppPreferencesContext.Provider value={{ language, theme, setLanguage, setTheme }}>
+    <AppPreferencesContext.Provider value={contextValue}>
       {children}
     </AppPreferencesContext.Provider>
   );

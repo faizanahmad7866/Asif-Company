@@ -17,7 +17,7 @@ export const exportLocalBackup = async () => {
       visits: allData.visits
     });
 
-    const dateStr = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+    const dateStr = new Date().toLocaleDateString('en-GB').replaceAll('/', '-');
     const fileName = `AsifAppBackup_${dateStr}.json`;
 
     // Use Storage Access Framework for direct download (Android)

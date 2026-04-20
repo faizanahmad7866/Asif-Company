@@ -47,7 +47,7 @@ export const hashPasscode = async (code: string): Promise<string> => {
 
 // Normalize birth date answer: strip spaces, lowercase, so "01/01/1990" == "01/01/1990"
 export const hashSecurityAnswer = async (answer: string): Promise<string> => {
-  const normalized = answer.trim().toLowerCase().replace(/\s+/g, '');
+  const normalized = answer.trim().toLowerCase().replaceAll(/\s+/g, '');
   return await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, normalized);
 };
 
@@ -56,12 +56,17 @@ export const verifySecurityAnswer = async (answer: string, storedHash: string): 
   return hash === storedHash;
 };
 
+export const lockSession = async (): Promise<void> => {
+  await AsyncStorage.removeItem(APP_LOCK_SESSION_KEY);
+};
+
+export const unlockSession = async (): Promise<void> => {
+  await AsyncStorage.setItem(APP_LOCK_SESSION_KEY, '1');
+};
+
+/** @deprecated Use lockSession() or unlockSession() instead */
 export const setUnlockedSession = async (unlocked: boolean): Promise<void> => {
-  if (unlocked) {
-    await AsyncStorage.setItem(APP_LOCK_SESSION_KEY, '1');
-  } else {
-    await AsyncStorage.removeItem(APP_LOCK_SESSION_KEY);
-  }
+  if (unlocked) { await unlockSession(); } else { await lockSession(); }
 };
 
 export const isSessionUnlocked = async (): Promise<boolean> => {

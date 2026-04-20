@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
-  Alert, ActivityIndicator, Image, Keyboard,
+  Alert, ActivityIndicator, Image,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import * as Haptics from 'expo-haptics';
@@ -90,7 +90,7 @@ export default function AddScreen() {
             { headers: { 'User-Agent': 'AsifCompanySalesApp/1.0' } }
           );
           const data = await response.json();
-          if (data && data.address) {
+          if (data?.address) {
             const a = data.address;
             const parts = [a.house_number, a.road || a.pedestrian || a.footway || a.path, a.neighbourhood || a.suburb || a.village || a.hamlet, a.city || a.town || a.municipality || a.county, a.state_district || a.state, a.postcode, a.country].filter(Boolean);
             detailedAddress = parts.join(', ');
@@ -139,6 +139,7 @@ export default function AddScreen() {
   };
 
   const canSave = !!shopName && !!ownerName && !!coords && (contactNumber || '').length === 10 && !isLocating;
+  const cannotSave = !canSave;
 
   const handleSave = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -197,7 +198,10 @@ export default function AddScreen() {
         <View style={styles.card}>
           <View style={styles.gpsHeader}>
             <View style={styles.gpsStatusRow}>
-              <View style={[styles.gpsStatusDot, { backgroundColor: locationReady ? Theme.colors.secondary : isLocating ? '#F59E0B' : Theme.colors.accent }]} />
+              {(() => {
+            const dotColor = locationReady ? Theme.colors.secondary : (isLocating ? '#F59E0B' : Theme.colors.accent);
+            return <View style={[styles.gpsStatusDot, { backgroundColor: dotColor }]} />;
+          })()}
               <Text style={styles.gpsStatusLabel}>
                 {isLocating ? text.fetchingLoc : locationReady ? text.locReady : text.locUnavailable}
               </Text>
@@ -279,7 +283,7 @@ export default function AddScreen() {
             maxLength={10}
             value={contactNumber}
             onChangeText={(t) => {
-              const digitsOnly = t.replace(/\D/g, '');
+              const digitsOnly = t.replaceAll(/\D/g, '');
               setContactNumber(digitsOnly);
               setPhoneError(digitsOnly.length > 0 && digitsOnly.length < 10 ? text.error10Digit : null);
             }}

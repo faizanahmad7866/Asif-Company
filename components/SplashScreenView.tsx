@@ -10,7 +10,7 @@ import {
 const { width, height } = Dimensions.get('window');
 
 interface Props {
-  onFinish: () => void;
+  readonly onFinish: () => void;
 }
 
 export default function SplashScreenView({ onFinish }: Props) {

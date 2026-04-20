@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, TextInput, ScrollView,
+  View, Text, StyleSheet, TextInput,
   TouchableOpacity, Alert, ActivityIndicator, Image
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -106,8 +106,8 @@ export default function EditShopScreen() {
       try {
         const geo = await Location.reverseGeocodeAsync({ latitude, longitude });
         if (geo.length > 0) {
-          const g = geo[0];
-          addr = [g.streetNumber, g.street, g.district || g.subregion, g.city, g.region, g.country].filter(Boolean).join(', ');
+          const [g] = geo;
+          addr = [g.streetNumber, g.street, g.district ?? g.subregion, g.city, g.region, g.country].filter(Boolean).join(', ');
         }
       } catch {}
       const accNote = accuracy != null ? ` (±${Math.round(accuracy)}m)` : '';
