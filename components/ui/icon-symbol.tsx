@@ -30,12 +30,11 @@ export function IconSymbol({
   size = 24,
   color,
   style,
-}: {
+}: Readonly<{
   name: IconSymbolName;
   size?: number;
   color: string | OpaqueColorValue;
   style?: StyleProp<TextStyle>;
-  weight?: SymbolWeight;
-}) {
+}>) {
   return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
 }
